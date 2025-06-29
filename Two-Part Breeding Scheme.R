@@ -1,60 +1,66 @@
-# Load the AlphaSimR package which contains functions for simulating plant and animal breeding
+# Load AlphaSimR package
 library(AlphaSimR)
 
-# Set the random number generator seed so that the results are reproducible each time you run the script
+# Set random seed for reproducibility
 set.seed(123)
 
-# Step 1: Create a founder population using quickHaplo()
-# - nInd = 100: create 100 individuals (plants)
-# - nChr = 1: with 1 chromosome
-# - segSites = 1000: and 1000 segregating (variable) genetic sites per chromosome
+# === STEP 1: Setup ===
+cat("\n=== STEP 1: Creating Founder Population ===\n")
 founders <- quickHaplo(nInd = 100, nChr = 1, segSites = 1000)
 
-# Set up simulation parameters using SimParam
-# This object holds the rules and genetic architecture for the simulation
 SP <- SimParam$new(founders)
-
-# Add a quantitative trait controlled by additive effects only
-# - nQtlPerChr = 100: 100 QTL (quantitative trait loci) per chromosome
 SP$addTraitA(nQtlPerChr = 100)
-
-# Set environmental variance to simulate heritability
-# - h2 = 0.4: set narrow-sense heritability of the trait to 0.4 (moderate)
 SP$setVarE(h2 = 0.4)
 
-# STEP 2: Start Population Improvement Component
-# This part simulates fast-cycle recurrent genomic selection
+cat("Founder population created with 100 individuals.\n")
 
-# Create an initial population from the founder individuals
+# === STEP 2: Population Improvement ===
+cat("\n=== STEP 2: Population Improvement ===\n")
+
 popImprovement <- newPop(founders)
 
-# Loop through 3 cycles of population improvement (recurrent selection)
-for (cycle in 1:3) {
-  # Select the top 20 individuals based on their genomic breeding values (GEBVs)
-  # - use = "bv": select using breeding value (bv = best guess of genetic potential)
-  selected <- selectInd(popImprovement, nInd = 20, use = "bv")
+# Loop through 5 cycles of improvement
+for (cycle in 1:5) {
+  cat(sprintf("\n-- Cycle %d --\n", cycle))
   
-  # Randomly cross the selected individuals to make the next generation
-  # - nCrosses = 10: 10 mating pairs
-  # - nProgeny = 10: each cross produces 10 offspring
-  popImprovement <- randCross(selected, nCrosses = 10, nProgeny = 10)
+  # Select top 20 by breeding value
+  parents <- selectInd(popImprovement, nInd = 20, use = "bv")
+  cat("Selected 20 individuals based on breeding value.\n")
+  cat("Mean breeding value of selected parents:\n")
+  print(mean(bv(parents)))
+  
+  # Cross to make 100 offspring (10 crosses × 10 progeny)
+  popImprovement <- randCross(parents, nCrosses = 10, nProgeny = 10)
+  cat("Created new population from crosses (100 individuals).\n")
+  
+  # Save seed to product development every 2nd cycle
+  if (cycle %% 2 == 0) {
+    cat("Sending seed from this cycle to product development.\n")
+    if (!exists("productPool")) {
+      productPool <- popImprovement
+    } else {
+      productPool <- c(productPool, popImprovement)
+    }
+  }
 }
 
-# STEP 3: Send seed to Product Development Component
-# This mimics taking improved material and evaluating it in later trials
+# === STEP 3: Product Development ===
+cat("\n=== STEP 3: Product Development ===\n")
 
-# Select the top 50 individuals from the final improved population
-# - These are treated as inbred lines to evaluate and potentially release
-candidateLines <- selectInd(popImprovement, nInd = 50, use = "bv")
+# Select top 100 individuals from product pool by breeding value
+productLines <- selectInd(productPool, nInd = 100, use = "bv")
+cat("Selected 100 candidate lines from product pool based on breeding value.\n")
+cat("Mean breeding value of selected product lines:\n")
+print(mean(bv(productLines)))
 
-# STEP 4: Product Development Simulation
-# Select the 5 best lines for release based on observed phenotype (simulated trial performance)
-# - use = "pheno": select based on observed phenotypic value (genetics + environment)
-selectedForRelease <- selectInd(candidateLines, nInd = 5, use = "pheno")
+# Further select top 10 based on phenotype (simulated field performance)
+bestLines <- selectInd(productLines, nInd = 10, use = "pheno")
+cat("\nSelected top 10 lines based on phenotype (trial performance).\n")
+cat("Phenotypic values of top 10:\n")
+print(pheno(bestLines))
 
-# Output section
-# Print a message to indicate what’s being shown
-cat("Phenotypic values of final selected lines (release candidates):\n")
-
-# Print the actual phenotypic values of the 5 selected individuals
-print(selectedForRelease@pheno)
+# Final selection: choose top 5 to release
+released <- selectInd(bestLines, nInd = 5, use = "pheno")
+cat("\n=== STEP 4: Final Released Lines ===\n")
+cat("Phenotypic values of released lines:\n")
+print(pheno(released))
