@@ -4,18 +4,18 @@ library(AlphaSimR)
 # Set random seed for reproducibility
 set.seed(123)
 
-# === STEP 1: Setup ===
-cat("\n=== STEP 1: Creating Founder Population ===\n")
+# STEP 1: Make the founder population
+cat("\nSTEP 1: Make the founder population\n")
 founders <- quickHaplo(nInd = 100, nChr = 1, segSites = 1000)
 
 SP <- SimParam$new(founders)
 SP$addTraitA(nQtlPerChr = 100)
 SP$setVarE(h2 = 0.4)
 
-cat("Founder population created with 100 individuals.\n")
+cat("Created a founder population with 100 individuals.\n")
 
-# === STEP 2: Population Improvement ===
-cat("\n=== STEP 2: Population Improvement ===\n")
+# STEP 2: Population improvement component
+cat("\nSTEP 2: Population improvement component\n")
 
 popImprovement <- newPop(founders)
 
@@ -44,8 +44,8 @@ for (cycle in 1:5) {
   }
 }
 
-# === STEP 3: Product Development ===
-cat("\n=== STEP 3: Product Development ===\n")
+# STEP 3: Product development component
+cat("\nSTEP 3: Product development component\n")
 
 # Select top 100 individuals from product pool by breeding value
 productLines <- selectInd(productPool, nInd = 100, use = "bv")
@@ -61,6 +61,6 @@ print(pheno(bestLines))
 
 # Final selection: choose top 5 to release
 released <- selectInd(bestLines, nInd = 5, use = "pheno")
-cat("\n=== STEP 4: Final Released Lines ===\n")
+cat("\nSTEP 4: Final released lines\n")
 cat("Phenotypic values of released lines:\n")
 print(pheno(released))
